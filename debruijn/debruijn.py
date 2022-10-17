@@ -114,43 +114,95 @@ def build_graph(kmer_dict):
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
 
-    for node in path_list:
+    for path in path_list:
 
         if delete_entry_node == True and delete_sink_node == True:
-            graph.remove_nodes_from(node)
+            graph.remove_nodes_from(path)
             #tous les noeuds d un chemin sont supprimes
 
         elif delete_entry_node == True:
-            graph.remove_nodes_from(node[:-1])
+            graph.remove_nodes_from(path[:-1])
             #tous les noeuds d un chemin sont supprime sauf le dernier
 
         elif delete_sink_node == True:
-            graph.remove_nodes_from(node[1:])
+            graph.remove_nodes_from(path[1:])
             #tous les noeuds d un chemin sont supprmies sauf le premier
 
         elif delete_entry_node == False and delete_sink_node == False:
-            graph.remove_nodes_from(node[1:-1])
+            graph.remove_nodes_from(path[1:-1])
             #tous les noeuds d un chemin sont supprimes saud le premier et le dernier
 
     return graph
 
 def std(data):
-    pass
+
+    return statistics.stdev(data)
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
-    pass
+
+    std_weight = std(weight_avg_list)
+    std_length = std(path_length)
+
+    if std_weight > 0:
+        # selectionner le chemin dont le poid est le plus eleve.
+        best_path_index = weight_avg_list.index(max(weight_avg_list))
+    elif std_weight == 0:
+        if std_length > 0:
+            # selectionner le chemin le plus long
+            best_path_index = path_length.index(max(path_length))
+
+        elif std_length == 0:
+            # choix aleatoire
+            best_path_index = randint(start = 0, end = len(path_list)-1)
+    
+    for path_index in range(len(path_list)):
+
+            if path_list[path_index] != path_list[best_path_index]:
+
+                graph = remove_paths(graph, [path_list[path_index]], delete_entry_node, delete_sink_node)
+
+    return graph
 
 def path_average_weight(graph, path):
 
     return statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
 
 def solve_bubble(graph, ancestor_node, descendant_node):
-    pass
+
+    #finding all the paths between the ancestor and the descendant.
+    path_list = nx.all_simple_paths(graph, source = ancestor_node, target = descendant_node)
+
+    # calculating the weigth and length of all the paths.
+    weight_avg_list = []
+    path_length = []
+    for path in path_list:
+        weight_avg_list = weight_avg_list.append(path_average_weight(graph, path))
+        path_length = len(path)
+
+    # Final choice.
+    return select_best_path(graph, path_list, path_length, weight_avg_list, 
+                     delete_entry_node=False, delete_sink_node=False)
+    
 
 def simplify_bubbles(graph):
-    pass
+    bubble = False
+    for node in graph.nodes():
+        if len(list(graph.predecessors(node))) > 1:
+            for predecessor1 in list(graph.predecessors(node)):
+                for predecessor2 in list(graph.predecessors(node))[1:]:
+                    node_ancestor = nx.lowest_common_ancestor(graph, predecessor1, predecessor2)
+                    if node_ancestor != None:
+                        bubble = True
+                        Break
+        if bubble == True:
+            Break    
+
+    if bubble:
+        graph = simplify_bubbles(solve_bubble(node_ancestor, node))
+    
+    return graph
 
 def solve_entry_tips(graph, starting_nodes):
     pass
