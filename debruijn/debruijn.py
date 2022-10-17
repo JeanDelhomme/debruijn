@@ -26,6 +26,7 @@ random.seed(9001)
 from random import randint
 import statistics
 import matplotlib.pyplot as plt
+import textwrap
 matplotlib.use("Agg")
 
 __author__ = "DELHOMME Jean"
@@ -112,7 +113,26 @@ def build_graph(kmer_dict):
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
-    pass
+
+    for node in path_list:
+
+        if delete_entry_node == True and delete_sink_node == True:
+            graph.remove_nodes_from(node)
+            #tous les noeuds d un chemin sont supprimes
+
+        elif delete_entry_node == True:
+            graph.remove_nodes_from(node[:-1])
+            #tous les noeuds d un chemin sont supprime sauf le dernier
+
+        elif delete_sink_node == True:
+            graph.remove_nodes_from(node[1:])
+            #tous les noeuds d un chemin sont supprmies sauf le premier
+
+        elif delete_entry_node == False and delete_sink_node == False:
+            graph.remove_nodes_from(node[1:-1])
+            #tous les noeuds d un chemin sont supprimes saud le premier et le dernier
+
+    return graph
 
 def std(data):
     pass
@@ -123,7 +143,8 @@ def select_best_path(graph, path_list, path_length, weight_avg_list,
     pass
 
 def path_average_weight(graph, path):
-    pass
+
+    return statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
 
 def solve_bubble(graph, ancestor_node, descendant_node):
     pass
@@ -138,17 +159,47 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    
+    starting_node_list = []
+    
+    for node in graph.nodes():
+         if not list(graph.predecessors(node)):
+            starting_node_list.append(node)
+
+    return(starting_node_list)
 
 def get_sink_nodes(graph):
-    pass
+
+    sink_node_list = []
+    
+    for node in graph.nodes():
+         if not list(graph.successors(node)):
+            sink_node_list.append(node)
+
+    return(sink_node_list)
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
+
+    contig = []
+
+    for node_start in starting_nodes:
+        for node_end in ending_nodes:
+
+            if nx.has_path(graph, node_start, node_end) == True:
+                for path in nx.all_simple_paths(graph, node_start, node_end):
+                    seq = path[0]
+                    for node in path[1:]:
+                        seq += node[-1]
+                    contig.append(tuple((seq, len(seq))))
+
+    return contig
 
 def save_contigs(contigs_list, output_file):
-    pass
-
+    with open(output_file, "w") as file:
+        for i, (contig, length) in enumerate(contigs_list):
+            print(contig)
+            #file.write(f">contig_{i} len={length}\n{fill(contig, width=80)}\n")
+            file.write(">contig_{} len={}\n{}\n".format(i, length, textwrap.fill(contig, width = 80)))
 
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
@@ -196,8 +247,17 @@ def main():
         cut_kmer(read, args.kmer_size)
     build_kmer_dict(args.fastq_file, args.kmer_size)
 
-    nx.draw(build_graph(build_kmer_dict(args.fastq_file, args.kmer_size)))
+    graph = build_graph(build_kmer_dict(args.fastq_file, args.kmer_size))
+
+    nx.draw(graph)
     plt.show()
+
+    starting_nodes = get_starting_nodes(graph)
+    ending_nodes = get_sink_nodes(graph)
+
+    contigs_list = get_contigs(graph, starting_nodes, ending_nodes)
+
+    save_contigs(contigs_list, args.output_file)
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
