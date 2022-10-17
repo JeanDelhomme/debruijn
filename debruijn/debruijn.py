@@ -11,6 +11,8 @@
 #    A copy of the GNU General Public License is available at
 #    http://www.gnu.org/licenses/gpl-3.0.html
 
+# ~/.local/bin/
+
 """Perform assembly based on debruijn graph."""
 
 import argparse
@@ -26,13 +28,13 @@ import statistics
 import matplotlib.pyplot as plt
 matplotlib.use("Agg")
 
-__author__ = "Your Name"
+__author__ = "DELHOMME Jean"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["DELHOMME Jean"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "DELHOMME Jean"
+__email__ = "jean.delhomme@live.fr"
 __status__ = "Developpement"
 
 def isfile(path):
@@ -70,15 +72,34 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    pass
+
+    with open (fastq_file, "r") as file:
+        for ligne in file:
+            yield next(file).strip()
+            next(file)
+            next(file)
+            
 
 
 def cut_kmer(read, kmer_size):
-    pass
+
+    for i in range(len(read) - kmer_size + 1):
+        yield read[i:i+kmer_size]
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
+
+    kmer_dict = {}
+    for read in read_fastq(fastq_file):
+        for kmer in cut_kmer(read, kmer_size):
+        
+            if kmer not in kmer_dict:
+                kmer_dict[kmer] = 1
+            else:
+                kmer_dict[kmer] += 1
+        
+    return (kmer_dict)
+
 
 
 def build_graph(kmer_dict):
@@ -164,6 +185,11 @@ def main():
     """
     # Get arguments
     args = get_arguments()
+    read_generator = read_fastq(args.fastq_file)
+
+    for read in read_generator:
+        cut_kmer(read, args.kmer_size)
+        print(build_kmer_dict(args.fastq_file, args.kmer_size))
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
@@ -178,3 +204,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+    
+
