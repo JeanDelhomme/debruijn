@@ -282,6 +282,9 @@ def select_best_path(graph, path_list, path_length, weight_avg_list,
     std_weight = std(weight_avg_list)
     std_length = std(path_length)
 
+    print(weight_avg_list)
+    print(path_length)
+
     if std_weight > 0:
         # select the heaviest path.
         best_path_index = weight_avg_list.index(max(weight_avg_list))
@@ -365,10 +368,14 @@ def simplify_bubbles(graph):
     """
 
     bubble = False
+
+
     for node in graph.nodes():
-        if len(list(graph.predecessors(node))) > 1:
-            for predecessor1 in list(graph.predecessors(node)):
-                for predecessor2 in list(graph.predecessors(node))[1:]:
+        list_predecessor = list(graph.predecessors(node))
+
+        if len(list_predecessor) > 1:
+            for i, predecessor1 in enumerate(list_predecessor):
+                for predecessor2 in list_predecessor[:i] + list_predecessor[i+1:]:
                     node_ancestor = nx.lowest_common_ancestor(graph, predecessor1, predecessor2)
                     if node_ancestor != None:
                         bubble = True
@@ -383,13 +390,69 @@ def simplify_bubbles(graph):
 
 
 def solve_entry_tips(graph, starting_nodes):
+
     pass
 
 
 def solve_out_tips(graph, ending_nodes):
-    pass
 
+    # J'ai essayé plusieurs méthodes. Rien ne foncitonne.
 
+    if len(ending_nodes) > 1:
+
+        for node in graph.nodes:
+
+            paths_with_ending = []
+
+            for ending_node in ending_nodes:
+
+                path = nx.all_simple_paths(graph, node, ending_node)
+
+                if path:
+
+                    paths_with_ending.append(path)
+
+            if len(paths_with_ending) > 1:
+
+                    weight_avg_list = []
+                    path_length = []
+
+                    for path in paths_with_ending:
+
+                        weight_avg_list.append(path_average_weight(graph, path))
+                        path_length.append(len(path))
+
+                    graph = select_best_path(graph, path_list, path_length, weight_avg_list, delete_entry_node=False, delete_sink_node=True)
+
+    return graph
+
+"""
+    if len(ending_nodes) > 1:
+
+        for i, ending_node1 in enumerate(ending_nodes):
+            for ending_node2 in ending_nodes[i:]:
+
+                if ending_node1 in graph.nodes and ending_node2 in graph.nodes:
+
+                    node_ancestor = nx.lowest_common_ancestor(graph, ending_node1, ending_node2)
+
+                    path_list = list(nx.all_simple_paths(graph, node_ancestor, ending_node1))
+                    path_list += list(nx.all_simple_paths(graph, node_ancestor, ending_node2))
+
+                    # calculating the weigth and length of all the paths.
+                    weight_avg_list = []
+                    path_length = []
+
+                    for path in path_list:
+
+                        weight_avg_list.append(path_average_weight(graph, path))
+                        path_length.append(len(path))
+
+                    graph = select_best_path(graph, path_list, path_length, weight_avg_list, delete_entry_node=False, delete_sink_node=True)
+
+    return graph
+
+"""
 def get_starting_nodes(graph):
 
     """
@@ -570,7 +633,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    
-    
-
+    main() 
